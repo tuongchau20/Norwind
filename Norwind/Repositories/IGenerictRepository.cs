@@ -5,7 +5,7 @@ using Norwind.Models;
 
 namespace Norwind.Repositories
 {
-    public interface IGenerictRepository<T> where T : BaseModelDTO
+    public interface IGenerictRepository<T> where T : BaseModel
     {
         void Create(T entity);
         void Update(T entity);

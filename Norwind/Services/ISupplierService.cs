@@ -8,6 +8,6 @@ namespace Norwind.Services
         public SupplierDTO GetSupplierById(int id);
         public bool CreateSupplier(SupplierDTO supplier);
         public bool DeleteSupplier(int id);
-        public bool UpdateSupplierDTO(SupplierDTO supplier);
+        public bool UpdateSupplier(SupplierDTO supplier);
     }
 }

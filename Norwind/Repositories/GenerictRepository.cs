@@ -10,7 +10,7 @@ using Norwind.Models;
 
 namespace Norwind.Repositories
 {
-    public class GenerictRepository<T> : IGenerictRepository<T> where T : BaseModelDTO
+    public class GenerictRepository<T> : IGenerictRepository<T> where T : BaseModel
     {
         private readonly NorthwindContext _context;
         private readonly ILoggerManager _logger;

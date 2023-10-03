@@ -1,47 +1,105 @@
 ﻿using Norwind.DTO;
+using Norwind.Helpers;
+using Norwind.Models;
+using Norwind.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Norwind.Services
 {
     public class CategoryService : ICategoryService
     {
-        public bool CreateCategory(CategoryDTO categoryDTO)
+        private readonly IGenerictRepository<Category> _generictRepository;
+        private readonly ILoggerManager _logger;
+
+        public CategoryService(IGenerictRepository<Category> generictRepository, ILoggerManager logger)
         {
-            throw new NotImplementedException();
+            _generictRepository = generictRepository;
+            _logger = logger;
+        }
+
+        public bool CreateCategory(CategoryDTO category)
+        {
+            try
+            {
+                _logger.LogInfo("CategoryService: CreateCategory");
+
+                var newCategory = new Category
+                {
+                    CategoryName = category.CategoryName,
+                    Description = category.Description
+                };
+
+                _generictRepository.Create(newCategory);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("CategoryService: CreateCategory" + ex);
+                return false;
+            }
         }
 
         public bool DeleteCategory(int id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                _logger.LogInfo("CategoryService: DeleteCategory");
+                _generictRepository.DeleteById(id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("CategoryService: DeleteCategory" + ex);
+                return false;
+            }
         }
 
         public IEnumerable<CategoryDTO> GetAllCategories()
         {
-            throw new NotImplementedException();
-        }
+            var categories = _generictRepository.GetAll().Select(category => new CategoryDTO
+            {
+                CategoryId = category.CategoryId,
+                CategoryName = category.CategoryName,
+                Description = category.Description
+            }).ToList();
 
-        public IEnumerable<CategoryDTO> GetCategories()
-        {
-            throw new NotImplementedException();
+            return categories;
         }
 
         public CategoryDTO GetCategoryById(int id)
         {
-            throw new NotImplementedException();
+            var category = _generictRepository.GetById(id);
+            return new CategoryDTO
+            {
+                CategoryId = category.CategoryId,
+                CategoryName = category.CategoryName,
+                Description = category.Description
+            };
         }
 
-        public bool UpdateCategory(CategoryDTO categoryDTO)
+        public bool UpdateCategory(CategoryDTO category)
         {
-            throw new NotImplementedException();
-        }
+            try
+            {
+                _logger.LogInfo("CategoryService: UpdateCategory");
 
-        IEnumerable<CategoryDTO> ICategoryService.GetAllCategories()
-        {
-            throw new NotImplementedException();
-        }
+                var updateCategory = new Category
+                {
+                    CategoryId = category.CategoryId,
+                    CategoryName = category.CategoryName,
+                    Description = category.Description
+                };
 
-        CategoryDTO ICategoryService.GetCategoryById(int id)
-        {
-            throw new NotImplementedException();
+                _generictRepository.Update(updateCategory);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("CategoryService: UpdateCategory" + ex);
+                return false;
+            }
         }
     }
 }

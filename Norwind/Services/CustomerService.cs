@@ -1,4 +1,5 @@
-﻿using Norwind.DTO;
+﻿using AutoMapper;
+using Norwind.DTO;
 using Norwind.Helpers;
 using Norwind.Models;
 using Norwind.Repositories;
@@ -10,10 +11,10 @@ namespace Norwind.Services
 {
     public class CustomerService : ICustomerService
     {
-        private readonly IGenerictRepository<CustomerDTO> _generictRepository;
+        private readonly IGenerictRepository<Customer> _generictRepository;
         private readonly ILoggerManager _logger;
 
-        public CustomerService(IGenerictRepository<CustomerDTO> generictRepository, ILoggerManager logger)
+        public CustomerService(IGenerictRepository<Customer> generictRepository, ILoggerManager logger)
         {
             _generictRepository = generictRepository;
             _logger = logger;
@@ -21,6 +22,7 @@ namespace Norwind.Services
 
         public bool CreateCustomer(CustomerDTO customer)
         {
+
             try
             {
                 _logger.LogInfo("CustomerService: CreateCustomer");
@@ -37,11 +39,6 @@ namespace Norwind.Services
                     Country = customer.Country
                 }
                 ;
-                if (newCustomer == null)
-                {
-                    return false;
-                }
-
                 _generictRepository.Create(newCustomer);
                 return true;
             }
@@ -69,7 +66,7 @@ namespace Norwind.Services
 
         public IEnumerable<CustomerDTO> GetAllCustomers()
         {
-            // Truy vấn danh sách các Customer từ thực thể Customer
+          // Truy vấn danh sách các Customer từ thực thể Customer
             var customers = _generictRepository.GetAll().Select(customer => new CustomerDTO
             {
                 CustomerId = customer.CustomerId,
@@ -80,7 +77,7 @@ namespace Norwind.Services
                 PostalCode = customer.PostalCode,
                 Country = customer.Country
             }).ToList();
-
+            
             return customers;
         }
 

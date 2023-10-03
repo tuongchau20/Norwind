@@ -10,9 +10,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Norwind.Controllers
 {
+    public interface IOrderController
+    {
+        Task<ActionResult<Order>> CreateOrder(OrderDTO orderDTO);
+        Task<IActionResult> DeleteOrder(int id);
+        Task<ActionResult<OrderDTO>> GetOrder(int id);
+        Task<ActionResult<IEnumerable<OrderDTO>>> GetOrders();
+        Task<IActionResult> UpdateOrder(int id, OrderDTO orderDTO);
+    }
+
     [Route("api/orders")]
     [ApiController]
-    public class OrderController : ControllerBase
+    public class OrderController : ControllerBase, IOrderController
     {
         private readonly NorthwindContext _context;
         private readonly ILogger<OrderController> _logger;
@@ -37,82 +46,142 @@ namespace Norwind.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(orders);
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<OrderDTO>> GetOrder(int id)
-    {
-        var order = await _context.Orders
-            .Where(o => o.OrderId == id)
-            .Select(o => new OrderDTO
+            foreach (var order in orders)
             {
-                OrderId = o.OrderId,
-                CustomerId = o.CustomerId,
-                EmployeeId = o.EmployeeId,
-                OrderDate = o.OrderDate,
-                ShipperId = o.ShipperId
-            })
-            .FirstOrDefaultAsync();
+                var customer = _context.Customers.FirstOrDefault(x => x.CustomerId == order.CustomerId);
+                if (customer != null)
+                {
+                    var customerDto = new CustomerDTO()
+                    {
+                        CustomerId = customer.CustomerId,
+                        CustomerName = customer.CustomerName
+                    };
+                    order.Customer = customerDto;
+                }
+                var employee = _context.Employees.FirstOrDefault(x => x.EmployeeId == order.EmployeeId);
+                if (employee != null)
+                {
+                    var employeeDto = new EmployeeDTO()
+                    {
+                        EmployeeId = employee.EmployeeId,
+                        FirstName = employee.FirstName,
+                        LastName = employee.LastName
+                    };
+                    order.Employee = employeeDto;
+                }
+                var shipper = _context.Shippers.FirstOrDefault(x => x.ShipperId == order.ShipperId);
+                if (shipper != null)
+                {
+                    var shipperDto = new ShipperDTO()
+                    {
+                        ShipperId = shipper.ShipperId,
+                        ShipperName = shipper.ShipperName,
+                        Phone = shipper.Phone
+                    };
+                    order.Shipper = shipperDto;
+                }
 
-        if (order == null)
-        {
-            return NotFound();
+                var details = _context.OrderDetails.Where(x => x.OrderId == order.OrderId).Select(s => new OrderDetailDTO()
+                {
+                    OrderDetailId = s.OrderDetailId,
+                    ProductId = s.ProductId,
+                    Quantity = s.Quantity
+                }).ToList();
+                order.Details = details;
+                foreach (var detail in details)
+                {
+                    var product = _context.Products.FirstOrDefault(x => x.ProductId == detail.ProductId);
+                    if (product != null)
+                    {
+                        var productDto = new ProductDTO()
+                        {
+                            ProductId = product.ProductId,
+                            ProductName = product.ProductName,
+                            Price = product.Price
+
+                        };
+                        detail.Product = productDto;
+                    }
+
+                }
+            }
+
+            return Ok(orders);
         }
 
-        return Ok(order);
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<Order>> CreateOrder(OrderDTO orderDTO)
-    {
-        var order = new Order
+        [HttpGet("{id}")]
+        public async Task<ActionResult<OrderDTO>> GetOrder(int id)
         {
-            CustomerId = orderDTO.CustomerId,
-            EmployeeId = orderDTO.EmployeeId,
-            OrderDate = orderDTO.OrderDate,
-            ShipperId = orderDTO.ShipperId
-        };
+            var order = await _context.Orders
+                .Where(o => o.OrderId == id)
+                .Select(o => new OrderDTO
+                {
+                    OrderId = o.OrderId,
+                    CustomerId = o.CustomerId,
+                    EmployeeId = o.EmployeeId,
+                    OrderDate = o.OrderDate,
+                    ShipperId = o.ShipperId
+                })
+                .FirstOrDefaultAsync();
 
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync();
+            if (order == null)
+            {
+                return NotFound();
+            }
 
-        return CreatedAtAction(nameof(GetOrder), new { id = order.OrderId }, order);
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateOrder(int id, OrderDTO orderDTO)
-    {
-        var existingOrder = await _context.Orders.FindAsync(id);
-
-        if (existingOrder == null)
-        {
-            return NotFound();
+            return Ok(order);
         }
 
-        existingOrder.CustomerId = orderDTO.CustomerId;
-        existingOrder.EmployeeId = orderDTO.EmployeeId;
-        existingOrder.OrderDate = orderDTO.OrderDate;
-        existingOrder.ShipperId = orderDTO.ShipperId;
-
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteOrder(int id)
-    {
-        var order = await _context.Orders.FindAsync(id);
-        if (order == null)
+        [HttpPost]
+        public async Task<ActionResult<Order>> CreateOrder(OrderDTO orderDTO)
         {
-            return NotFound();
+            var order = new Order
+            {
+                CustomerId = orderDTO.CustomerId,
+                EmployeeId = orderDTO.EmployeeId,
+                OrderDate = orderDTO.OrderDate,
+                ShipperId = orderDTO.ShipperId
+            };
+
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetOrder), new { id = order.OrderId }, order);
         }
 
-        _context.Orders.Remove(order);
-        await _context.SaveChangesAsync();
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateOrder(int id, OrderDTO orderDTO)
+        {
+            var existingOrder = await _context.Orders.FindAsync(id);
 
-        return NoContent();
+            if (existingOrder == null)
+            {
+                return NotFound();
+            }
+
+            existingOrder.CustomerId = orderDTO.CustomerId;
+            existingOrder.EmployeeId = orderDTO.EmployeeId;
+            existingOrder.OrderDate = orderDTO.OrderDate;
+            existingOrder.ShipperId = orderDTO.ShipperId;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteOrder(int id)
+        {
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            _context.Orders.Remove(order);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
-}
 }
